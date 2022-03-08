@@ -9,7 +9,7 @@ public interface FlickrApi {
     "&format=json"+
     "&nojsoncallback=1"+
     "&extras=url_s")
-    Call<String> fetchPhotos();
+    Call<FlickrResponse> fetchPhotos();
 
 
 }
