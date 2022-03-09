@@ -5,6 +5,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -28,6 +29,15 @@ public class PhotoGalleryFragment extends Fragment {
     private RecyclerView recyclerView;
     private static final String TAG = "PhotoGalleryFragment";
     private PhotoGalleryViewModel photoGalleryViewModel;
+    private int column = 0;
+    private ViewTreeObserver.OnGlobalLayoutListener layoutListener = new ViewTreeObserver.OnGlobalLayoutListener() {
+        @Override
+        public void onGlobalLayout() {
+            // 动态调整列数
+            column = recyclerView.getMeasuredWidth() / 300;
+            ((GridLayoutManager)recyclerView.getLayoutManager()).setSpanCount(column == 0? 3 : column);
+        }
+    };
 
     @Nullable
     @org.jetbrains.annotations.Nullable
@@ -35,7 +45,8 @@ public class PhotoGalleryFragment extends Fragment {
     public View onCreateView(@NonNull @org.jetbrains.annotations.NotNull LayoutInflater inflater, @Nullable @org.jetbrains.annotations.Nullable ViewGroup container, @Nullable @org.jetbrains.annotations.Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_photo_gallery, container, false);
         recyclerView = view.findViewById(R.id.photo_recycler_view);
-        recyclerView.setLayoutManager(new GridLayoutManager(getContext(), 3));
+        recyclerView.getViewTreeObserver().addOnGlobalLayoutListener(layoutListener);
+        recyclerView.setLayoutManager(new GridLayoutManager(getContext(), 1));
         return view;
     }
 
