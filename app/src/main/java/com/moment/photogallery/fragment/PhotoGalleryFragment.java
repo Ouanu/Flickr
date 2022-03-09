@@ -103,6 +103,17 @@ public class PhotoGalleryFragment extends Fragment {
                 return false;
             }
         });
+
+        searchView.setOnSearchClickListener(v -> searchView.setQuery(photoGalleryViewModel.getSearchTerm(), false));
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull @NotNull MenuItem item) {
+        if (item.getItemId() == R.id.menu_item_clear) {
+            photoGalleryViewModel.fetchPhotos("");
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
     }
 
     @Override
