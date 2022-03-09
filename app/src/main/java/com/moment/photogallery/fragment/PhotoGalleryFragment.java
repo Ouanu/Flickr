@@ -1,15 +1,20 @@
 package com.moment.photogallery.fragment;
 
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.ViewModelProvider;
@@ -20,6 +25,7 @@ import com.moment.photogallery.FlickrFetchr;
 import com.moment.photogallery.GalleryItem;
 import com.moment.photogallery.PhotoGalleryViewModel;
 import com.moment.photogallery.R;
+import com.moment.photogallery.ThumbnailDownloader;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -30,6 +36,8 @@ public class PhotoGalleryFragment extends Fragment {
     private static final String TAG = "PhotoGalleryFragment";
     private PhotoGalleryViewModel photoGalleryViewModel;
     private int column = 0;
+    private ThumbnailDownloader<PhotoHolder> thumbnailDownloader;
+    private PhotoAdapter adapter;
     private ViewTreeObserver.OnGlobalLayoutListener layoutListener = new ViewTreeObserver.OnGlobalLayoutListener() {
         @Override
         public void onGlobalLayout() {
@@ -47,16 +55,27 @@ public class PhotoGalleryFragment extends Fragment {
         recyclerView = view.findViewById(R.id.photo_recycler_view);
         recyclerView.getViewTreeObserver().addOnGlobalLayoutListener(layoutListener);
         recyclerView.setLayoutManager(new GridLayoutManager(getContext(), 1));
+        getViewLifecycleOwner().getLifecycle().addObserver(thumbnailDownloader.lifecycleObserver);
         return view;
     }
 
+    @SuppressWarnings("deprecation")
     @Override
     public void onCreate(@Nullable @org.jetbrains.annotations.Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         photoGalleryViewModel = new ViewModelProvider(this).get(PhotoGalleryViewModel.class);
+        adapter = new PhotoAdapter(photoGalleryViewModel.galleryItemLiveData.getValue());
 //        LiveData<List<GalleryItem>> flickrLiveData = new FlickrFetchr().fetchPhotos();
 //        flickrLiveData.observe(this, s -> Log.d(TAG, "Response received:" + s));
-
+        setRetainInstance(true);
+        Handler responseHandler;
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+            responseHandler = Handler.createAsync(Looper.getMainLooper());
+        } else {
+            responseHandler = new Handler(Looper.getMainLooper());
+        }
+        thumbnailDownloader = new ThumbnailDownloader<>("ThumbnailDownload", responseHandler);
+        getLifecycle().addObserver(thumbnailDownloader.fragmentLifecycleObserver);
     }
 
     @Override
@@ -71,23 +90,24 @@ public class PhotoGalleryFragment extends Fragment {
         }
     }
 
-    private class PhotoHolder extends RecyclerView.ViewHolder {
+    public class PhotoHolder extends RecyclerView.ViewHolder {
 
-        private TextView textView;
+        ImageView imageView;
 
-        public PhotoHolder(TextView textView) {
-            super(textView);
-            this.textView = textView;
+        public PhotoHolder(ImageView imageView) {
+            super(imageView);
+            this.imageView = imageView;
         }
 
-        public void bindTitle(CharSequence charSequence) {
-            textView.setText(charSequence);
+        public void bindTitle(Drawable drawable) {
+            imageView.setImageDrawable(drawable);
         }
     }
 
     private class PhotoAdapter extends RecyclerView.Adapter<PhotoHolder> {
 
         private List<GalleryItem> galleryItems;
+        private PhotoHolder mHolder;
 
         public PhotoAdapter(List<GalleryItem> galleryItems) {
             this.galleryItems = galleryItems;
@@ -97,19 +117,40 @@ public class PhotoGalleryFragment extends Fragment {
         @NotNull
         @Override
         public PhotoHolder onCreateViewHolder(@NonNull @NotNull ViewGroup parent, int viewType) {
-            TextView textView = new TextView(parent.getContext());
-            return new PhotoHolder(textView);
+            ImageView imageView = (ImageView) LayoutInflater.from(getContext()).inflate(R.layout.list_item_gallery, parent, false);
+            return new PhotoHolder(imageView);
         }
 
         @Override
         public void onBindViewHolder(@NonNull @NotNull PhotoGalleryFragment.PhotoHolder holder, int position) {
             GalleryItem galleryItem = galleryItems.get(position);
-            holder.bindTitle(galleryItem.getTitle());
+//            Drawable placeholder = ContextCompat.getDrawable(requireContext(), R.drawable.ic_launcher_background);
+//            holder.bindTitle(placeholder);
+            mHolder = holder;
+            thumbnailDownloader.queueThumbnail(holder, galleryItem.getUrl());
         }
 
         @Override
         public int getItemCount() {
             return galleryItems.size();
         }
+
+        public PhotoHolder getmHolder() {
+            return mHolder;
+        }
+
+
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        getViewLifecycleOwner().getLifecycle().removeObserver(thumbnailDownloader.lifecycleObserver);
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        getLifecycle().removeObserver(thumbnailDownloader.fragmentLifecycleObserver);
     }
 }
