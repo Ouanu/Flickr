@@ -6,22 +6,22 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.widget.ImageView;
-import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.core.content.ContextCompat;
+import androidx.appcompat.widget.SearchView;
 import androidx.fragment.app.Fragment;
-import androidx.lifecycle.LiveData;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.moment.photogallery.FlickrFetchr;
 import com.moment.photogallery.GalleryItem;
 import com.moment.photogallery.PhotoGalleryViewModel;
 import com.moment.photogallery.R;
@@ -47,6 +47,9 @@ public class PhotoGalleryFragment extends Fragment {
         }
     };
 
+
+
+
     @Nullable
     @org.jetbrains.annotations.Nullable
     @Override
@@ -68,6 +71,7 @@ public class PhotoGalleryFragment extends Fragment {
 //        LiveData<List<GalleryItem>> flickrLiveData = new FlickrFetchr().fetchPhotos();
 //        flickrLiveData.observe(this, s -> Log.d(TAG, "Response received:" + s));
         setRetainInstance(true);
+        setHasOptionsMenu(true);
         Handler responseHandler;
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
             responseHandler = Handler.createAsync(Looper.getMainLooper());
@@ -76,6 +80,29 @@ public class PhotoGalleryFragment extends Fragment {
         }
         thumbnailDownloader = new ThumbnailDownloader<>("ThumbnailDownload", responseHandler);
         getLifecycle().addObserver(thumbnailDownloader.fragmentLifecycleObserver);
+    }
+
+    @Override
+    public void onCreateOptionsMenu(@NonNull @NotNull Menu menu, @NonNull @NotNull MenuInflater inflater) {
+        super.onCreateOptionsMenu(menu, inflater);
+        inflater.inflate(R.menu.fragment_photo_gallery, menu);
+        MenuItem searchItem = menu.findItem(R.id.menu_item_search);
+        SearchView searchView = (SearchView) searchItem.getActionView();
+
+        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                Log.d(TAG, "onQueryTextSubmit: " + query);
+                photoGalleryViewModel.fetchPhotos(query);
+                return true;
+            }
+
+            @Override
+            public boolean onQueryTextChange(String newText) {
+                Log.d(TAG, "onQueryTextChange: " + newText);
+                return false;
+            }
+        });
     }
 
     @Override

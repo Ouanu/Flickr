@@ -10,11 +10,13 @@ import androidx.lifecycle.MutableLiveData;
 
 import com.moment.photogallery.api.FlickrApi;
 import com.moment.photogallery.api.FlickrResponse;
+import com.moment.photogallery.api.PhotoInterceptor;
 import com.moment.photogallery.api.PhotoResponse;
 
 import java.io.IOException;
 import java.util.List;
 
+import okhttp3.OkHttpClient;
 import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -27,20 +29,34 @@ public class FlickrFetchr {
     private static FlickrApi flickrApi;
 
     static {
+        OkHttpClient client = new OkHttpClient().newBuilder()
+                .addInterceptor(new PhotoInterceptor())
+                .build();
+
+
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl("https://api.flickr.com/")
                 .addConverterFactory(GsonConverterFactory.create()) //数据类型转化器，将Retrofit把网络响应数据反序列化为String类型
+                .client(client)
                 .build();
 
         flickrApi = retrofit.create(FlickrApi.class);
     }
 
     public LiveData<List<GalleryItem>> fetchPhotos() {
+        return fetchPhotoMetadata(flickrApi.fetchPhotos());
+    }
+
+    public LiveData<List<GalleryItem>> searchPhotos(String query) {
+        return fetchPhotoMetadata(flickrApi.searchPhotos(query));
+    }
+
+    private LiveData<List<GalleryItem>> fetchPhotoMetadata(Call<FlickrResponse> flickrRequest) {
         MutableLiveData<List<GalleryItem>> responseLiveData = new MutableLiveData<>();
 
         // 返回代表网络请求的Call<String>对象
         //然后由你决定何时执行该Call对象
-        Call<FlickrResponse> flickrRequest = flickrApi.fetchPhotos();
+//        Call<FlickrResponse> flickrRequest = flickrApi.fetchPhotos();
         //在后台线程上执行网络请求，一切都由Retrofit管理和调度
         flickrRequest.enqueue(new Callback<FlickrResponse>() {
             @Override
@@ -73,4 +89,6 @@ public class FlickrFetchr {
         Log.d(TAG, "Decoded bitmap = " +  bitmap + " from Response = " + response);
         return bitmap;
     }
+
+
 }
