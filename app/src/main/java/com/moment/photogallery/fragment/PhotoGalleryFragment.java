@@ -21,19 +21,28 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.work.Constraints;
+import androidx.work.NetworkType;
+import androidx.work.OneTimeWorkRequest;
+import androidx.work.PeriodicWorkRequest;
+import androidx.work.WorkManager;
 
 import com.moment.photogallery.GalleryItem;
 import com.moment.photogallery.PhotoGalleryViewModel;
+import com.moment.photogallery.PollWorker;
+import com.moment.photogallery.QueryPreferences;
 import com.moment.photogallery.R;
 import com.moment.photogallery.ThumbnailDownloader;
 
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 public class PhotoGalleryFragment extends Fragment {
     private RecyclerView recyclerView;
     private static final String TAG = "PhotoGalleryFragment";
+    private static final String POLL_WORK = "POLL_WORK";
     private PhotoGalleryViewModel photoGalleryViewModel;
     private int column = 0;
     private ThumbnailDownloader<PhotoHolder> thumbnailDownloader;
@@ -80,6 +89,13 @@ public class PhotoGalleryFragment extends Fragment {
         }
         thumbnailDownloader = new ThumbnailDownloader<>("ThumbnailDownload", responseHandler);
         getLifecycle().addObserver(thumbnailDownloader.fragmentLifecycleObserver);
+
+        //约束条件
+//        Constraints constraints = new Constraints.Builder().setRequiredNetworkType(NetworkType.UNMETERED).build();
+//        OneTimeWorkRequest workRequest = new OneTimeWorkRequest.Builder(PollWorker.class).setConstraints(constraints).build();
+//        OneTimeWorkRequest workRequest = new OneTimeWorkRequest.Builder(PollWorker.class).build();
+//        WorkManager.getInstance().enqueue(workRequest);
+
     }
 
     @Override
@@ -105,12 +121,35 @@ public class PhotoGalleryFragment extends Fragment {
         });
 
         searchView.setOnSearchClickListener(v -> searchView.setQuery(photoGalleryViewModel.getSearchTerm(), false));
+
+        MenuItem toggleItem = menu.findItem(R.id.menu_item_toggle_polling);
+        Boolean isPolling = QueryPreferences.getINSTANCE().isPolling(getContext());
+        String toggleItemTitle = isPolling? getString(R.string.stop_polling) : getString(R.string.start_polling);
+        toggleItem.setTitle(toggleItemTitle);
     }
 
     @Override
     public boolean onOptionsItemSelected(@NonNull @NotNull MenuItem item) {
         if (item.getItemId() == R.id.menu_item_clear) {
             photoGalleryViewModel.fetchPhotos("");
+            return true;
+        } else if (item.getItemId() == R.id.menu_item_toggle_polling) {
+            Boolean isPolling = QueryPreferences.getINSTANCE().isPolling(getContext());
+            if (isPolling) {
+                WorkManager.getInstance(getContext()).cancelUniqueWork(POLL_WORK);
+                QueryPreferences.getINSTANCE().setPolling(getContext(), false);
+            } else {
+                Constraints constraints = new Constraints.Builder()
+//                        .setRequiredNetworkType(NetworkType.UNMETERED)
+                        .build();
+                // 允许的最短时间为15分钟
+                PeriodicWorkRequest periodicWorkRequest = new PeriodicWorkRequest.Builder(PollWorker.class, 15, TimeUnit.MINUTES)
+                        .setConstraints(constraints)
+                        .build();
+                WorkManager.getInstance(getContext()).enqueue(periodicWorkRequest);
+                QueryPreferences.getINSTANCE().setPolling(getContext(), true);
+            }
+            getActivity().invalidateOptionsMenu();
             return true;
         }
         return super.onOptionsItemSelected(item);
@@ -191,4 +230,6 @@ public class PhotoGalleryFragment extends Fragment {
         super.onDestroy();
         getLifecycle().removeObserver(thumbnailDownloader.fragmentLifecycleObserver);
     }
+
+
 }

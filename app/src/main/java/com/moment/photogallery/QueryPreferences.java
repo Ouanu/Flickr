@@ -6,6 +6,8 @@ import android.preference.PreferenceManager;
 
 public class QueryPreferences {
     private static final String PREF_SEARCH_QUERY = "searchQuery";
+    private static final String PREF_LAST_RESULT_ID = "lastResultId";
+    private static final String PREF_IS_POLLING = "isPolling";
 
     private volatile static QueryPreferences INSTANCE = null;
 
@@ -33,5 +35,21 @@ public class QueryPreferences {
                 .edit()
                 .putString(PREF_SEARCH_QUERY, query)
                 .apply();
+    }
+
+    public String getLastResultId(Context context) {
+        return PreferenceManager.getDefaultSharedPreferences(context).getString(PREF_LAST_RESULT_ID, "");
+    }
+
+    public void setLastResultId(Context context, String lastResultId) {
+        PreferenceManager.getDefaultSharedPreferences(context).edit().putString(PREF_LAST_RESULT_ID, lastResultId);
+    }
+
+    public Boolean isPolling(Context context) {
+        return PreferenceManager.getDefaultSharedPreferences(context).getBoolean(PREF_IS_POLLING, false);
+    }
+
+    public void setPolling(Context context, Boolean isOn) {
+        PreferenceManager.getDefaultSharedPreferences(context).edit().putBoolean(PREF_IS_POLLING, isOn).apply();
     }
 }

@@ -44,11 +44,12 @@ public class FlickrFetchr {
     }
 
     public LiveData<List<GalleryItem>> fetchPhotos() {
-        return fetchPhotoMetadata(flickrApi.fetchPhotos());
+//        return fetchPhotoMetadata(flickrApi.fetchPhotos());
+        return fetchPhotoMetadata(fetchPhotosRequest());
     }
 
     public LiveData<List<GalleryItem>> searchPhotos(String query) {
-        return fetchPhotoMetadata(flickrApi.searchPhotos(query));
+        return fetchPhotoMetadata(searchPhotosRequest(query));
     }
 
     private LiveData<List<GalleryItem>> fetchPhotoMetadata(Call<FlickrResponse> flickrRequest) {
@@ -88,6 +89,14 @@ public class FlickrFetchr {
         Bitmap bitmap = BitmapFactory.decodeStream(response.body().byteStream());
         Log.d(TAG, "Decoded bitmap = " +  bitmap + " from Response = " + response);
         return bitmap;
+    }
+
+    public Call<FlickrResponse> fetchPhotosRequest() {
+        return flickrApi.fetchPhotos();
+    }
+
+    public Call<FlickrResponse> searchPhotosRequest(String query) {
+        return flickrApi.searchPhotos(query);
     }
 
 
