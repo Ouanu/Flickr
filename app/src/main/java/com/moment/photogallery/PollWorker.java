@@ -20,6 +20,11 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 
+import static com.moment.photogallery.PollWorker.Companion.ACTION_SHOW_NOTIFICATION;
+import static com.moment.photogallery.PollWorker.Companion.NOTIFICATION;
+import static com.moment.photogallery.PollWorker.Companion.PERM_PRIVATE;
+import static com.moment.photogallery.PollWorker.Companion.REQUEST_CODE;
+
 public class PollWorker extends Worker {
     private static final String NOTIFICATION_CHANNEL_ID = "flickr_poll";
     private static final String TAG = "PollWorker";
@@ -80,13 +85,32 @@ public class PollWorker extends Worker {
                     .setAutoCancel(true)
                     .build();
 
-            NotificationManagerCompat notificationManagerCompat = NotificationManagerCompat.from(context);
-            notificationManagerCompat.notify(0, notification);
+//            NotificationManagerCompat notificationManagerCompat = NotificationManagerCompat.from(context);
+//            notificationManagerCompat.notify(0, notification);
+//
+//            context.sendBroadcast(new Intent(ACTION_SHOW_NOTIFICATION), PERM_PRIVATE);
+            showBackgroundNotification(0, notification);
         }
-
 
         return Result.success();
     }
+
+    private void showBackgroundNotification(int requestCode, Notification notification) {
+        Intent intent = new Intent(ACTION_SHOW_NOTIFICATION);
+        intent.putExtra(REQUEST_CODE, requestCode);
+        intent.putExtra(NOTIFICATION, notification);
+
+        context.sendOrderedBroadcast(intent, PERM_PRIVATE);
+    }
+
+    public static class Companion {
+        public static final String ACTION_SHOW_NOTIFICATION = "com.moment.photogallery.SHOW_NOTIFICATION";
+        public static final String PERM_PRIVATE = "com.moment.photogallery.PRIVATE";
+        public static final String REQUEST_CODE = "REQUEST_CODE";
+        public static final String NOTIFICATION = "NOTIFICATION";
+    }
+
+
 
 
 }

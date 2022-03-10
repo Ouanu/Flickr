@@ -33,13 +33,14 @@ import com.moment.photogallery.PollWorker;
 import com.moment.photogallery.QueryPreferences;
 import com.moment.photogallery.R;
 import com.moment.photogallery.ThumbnailDownloader;
+import com.moment.photogallery.VisibleFragment;
 
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-public class PhotoGalleryFragment extends Fragment {
+public class PhotoGalleryFragment extends VisibleFragment {
     private RecyclerView recyclerView;
     private static final String TAG = "PhotoGalleryFragment";
     private static final String POLL_WORK = "POLL_WORK";

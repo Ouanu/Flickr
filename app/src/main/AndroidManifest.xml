@@ -2,7 +2,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.moment.photogallery">
 
+    <permission android:name="com.moment.photogallery.PRIVATE"
+        android:protectionLevel="signature"/>
     <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="com.moment.photogallery.PRIVATE"/>
 
     <application
         android:name=".PhotoGalleryApplication"
@@ -19,6 +22,13 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <receiver android:name=".NotificationReceiver"
+            android:permission="com.moment.photogallery.PRIVATE"
+            android:exported="false">
+            <intent-filter android:priority="-999">
+                <action android:name="com.moment.photogallery.SHOW_NOTIFICATION"/>
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>
